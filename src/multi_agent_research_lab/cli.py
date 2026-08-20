@@ -41,16 +41,49 @@ def _parse_query(query: str) -> ResearchQuery:
 def baseline(
     query: Annotated[str, typer.Option("--query", "-q", help="Research query")],
 ) -> None:
-    """Run a minimal single-agent baseline placeholder."""
+    """Run a minimal single-agent baseline."""
 
     _init()
     request = _parse_query(query)
     state = ResearchState(request=request)
-    state.final_answer = (
-        "Baseline skeleton response. TODO(student): replace this with a real single-agent "
-        "implementation and record latency/cost/quality metrics."
-    )
-    console.print(Panel.fit(state.final_answer, title="Single-Agent Baseline"))
+    
+    import time
+
+    from multi_agent_research_lab.services.llm_client import LLMClient
+    from multi_agent_research_lab.services.search_client import SearchClient
+    
+    start_time = time.time()
+    
+    try:
+        search_client = SearchClient()
+        sources = search_client.search(query, max_results=request.max_sources)
+        state.sources = sources
+        
+        sources_text = "\n\n".join(
+            [f"Source {i+1}: {s.title}\nURL: {s.url}\nContent: {s.snippet}" for i, s in enumerate(sources)]
+        )
+        
+        llm_client = LLMClient()
+        system_prompt = (
+            "You are a helpful assistant. Write a comprehensive response based on the provided sources. "
+            f"Tailor your response to the target audience: {request.audience}."
+        )
+        user_prompt = f"Query: {query}\n\nSources:\n{sources_text}"
+        
+        response = llm_client.complete(system_prompt, user_prompt)
+        state.final_answer = response.content
+        
+        duration = time.time() - start_time
+        
+        console.print(Panel.fit(state.final_answer, title="Single-Agent Baseline"))
+        console.print(
+            f"Latency: {duration:.2f}s | Tokens: {response.input_tokens} in, "
+            f"{response.output_tokens} out | Cost: ${response.cost_usd:.4f}"
+        )
+        
+    except Exception as exc:
+        console.print(Panel.fit(str(exc), title="Error", style="red"))
+        raise typer.Exit(code=2) from exc
 
 
 @app.command("multi-agent")
