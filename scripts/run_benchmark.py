@@ -16,7 +16,10 @@ from multi_agent_research_lab.services.search_client import SearchClient
 import time
 
 def baseline_runner(query_str: str) -> ResearchState:
-    request = ResearchQuery(query=query_str)
+    request = ResearchQuery(
+        query=query_str,
+        corpus_path="ai_agent_offline_research_corpus_v2/topics/01_single_agent_vs_multi_agent_architectures_for_complex_research_tasks.json"
+    )
     state = ResearchState(request=request)
     
     search_client = SearchClient()
@@ -42,7 +45,10 @@ def baseline_runner(query_str: str) -> ResearchState:
     return state
 
 def multi_agent_runner(query_str: str) -> ResearchState:
-    request = ResearchQuery(query=query_str)
+    request = ResearchQuery(
+        query=query_str,
+        corpus_path="ai_agent_offline_research_corpus_v2/topics/01_single_agent_vs_multi_agent_architectures_for_complex_research_tasks.json"
+    )
     state = ResearchState(request=request)
     workflow = MultiAgentWorkflow()
     return workflow.run(state)

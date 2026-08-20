@@ -6,8 +6,8 @@ This report compares the performance of single-agent vs multi-agent systems.
 
 | Run | Latency (s) | Cost (USD) | Quality | Citation cov. | Failure rate | Notes |
 |---|---:|---:|---:|---:|---:|---|
-| Single-Agent Baseline | 9.12 | 0.0006 | 8.0 | 0% | 0% |  |
-| Multi-Agent Workflow | 37.42 | 0.0024 | 7.0 | 0% | 0% |  |
+| Single-Agent Baseline | 12.04 | 0.0006 | 6.5 | 0% | 0% |  |
+| Multi-Agent Workflow | 31.86 | 0.0026 | 6.5 | 0% | 0% |  |
 
 ## Analysis
 

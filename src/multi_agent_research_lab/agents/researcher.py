@@ -21,8 +21,9 @@ class ResearcherAgent(BaseAgent):
         try:
             # 1. Search for information
             query = state.request.query
-            max_sources = state.request.max_sources
-            sources = search_client.search(query, max_results=max_sources)
+            sources = search_client.search(
+                query, max_results=state.request.max_sources, corpus_path=state.request.corpus_path
+            )
             state.sources = sources
             
             if not sources:

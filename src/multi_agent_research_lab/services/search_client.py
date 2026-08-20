@@ -6,9 +6,56 @@ from multi_agent_research_lab.core.schemas import SourceDocument
 class SearchClient:
     """Provider-agnostic search client skeleton."""
 
-    def search(self, query: str, max_results: int = 5) -> list[SourceDocument]:
+    def search(
+        self, query: str, max_results: int = 5, corpus_path: str | None = None
+    ) -> list[SourceDocument]:
         """Search for documents relevant to a query."""
+        import json
+        import os
+
         import requests
+
+        if corpus_path:
+            if not os.path.exists(corpus_path):
+                print(f"Warning: Corpus file not found: {corpus_path}")
+                return []
+                
+            with open(corpus_path, encoding="utf-8") as f:
+                corpus = json.load(f)
+                
+            kb = corpus.get("knowledge_base", {})
+            articles = kb.get("knowledge_articles", [])
+            sources = kb.get("source_documents", [])
+            
+            docs: list[SourceDocument] = []
+            
+            for article in articles:
+                docs.append(SourceDocument(
+                    title=article.get("title", "Untitled Article"),
+                    url=article.get("article_id"),
+                    snippet=article.get("content", ""),
+                    metadata={"source": "offline_corpus", "type": "article"}
+                ))
+                
+            for source in sources:
+                docs.append(SourceDocument(
+                    title=source.get("title", "Untitled Source"),
+                    url=source.get("provenance_url") or source.get("document_id"),
+                    snippet=source.get("full_text", ""),
+                    metadata={"source": "offline_corpus", "type": "source_document"}
+                ))
+            
+            # Simple keyword matching: rank by term frequency of query words (case-insensitive)
+            query_terms = set(query.lower().split())
+            
+            def score(doc: SourceDocument) -> int:
+                text = (doc.title + " " + doc.snippet).lower()
+                return sum(1 for term in query_terms if term in text)
+                
+            # Filter and sort
+            docs.sort(key=score, reverse=True)
+            
+            return docs[:max_results]
 
         from multi_agent_research_lab.core.config import get_settings
         

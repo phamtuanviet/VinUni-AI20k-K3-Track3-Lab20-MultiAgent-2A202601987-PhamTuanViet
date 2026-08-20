@@ -35,9 +35,26 @@ def run_benchmark(
                     "You are an evaluator. Grade the answer from 1 to 10 based on depth, "
                     "clarity, and factual grounding. Output only a number."
                 )
+                
+                if getattr(state.request, "corpus_path", None):
+                    import json
+                    import os
+                    if os.path.exists(state.request.corpus_path):
+                        with open(state.request.corpus_path, "r", encoding="utf-8") as f:
+                            corpus = json.load(f)
+                            rubric = corpus.get("research_task", {}).get("evaluation_rubric")
+                            if rubric:
+                                rubric_str = "\n".join([f"- {r.get('dimension')} (Weight {r.get('weight')}): {r.get('full_credit')}" for r in rubric])
+                                eval_sys = (
+                                    "You are an expert evaluator. Evaluate the following answer based on the rubric below.\n"
+                                    f"Rubric (Total 100 points):\n{rubric_str}\n\n"
+                                    "Calculate the total score out of 100 based on the rubric, then divide by 10 to get a score from 1 to 10. "
+                                    "Output ONLY the final score out of 10 as a number (e.g. 8.5). Do not include any other text."
+                                )
+
                 eval_usr = f"Query: {query}\n\nAnswer: {state.final_answer}"
                 eval_resp = llm.complete(eval_sys, eval_usr)
-                match = re.search(r"(\d+)", eval_resp.content)
+                match = re.search(r"(\d+(\.\d+)?)", eval_resp.content)
                 if match:
                     quality_score = float(match.group(1))
             except Exception:

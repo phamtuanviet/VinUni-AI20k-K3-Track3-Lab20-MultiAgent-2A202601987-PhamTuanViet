@@ -23,9 +23,9 @@ def _init() -> None:
     configure_logging(settings.log_level)
 
 
-def _parse_query(query: str) -> ResearchQuery:
+def _parse_query(query: str, corpus: str | None = None) -> ResearchQuery:
     try:
-        return ResearchQuery(query=query)
+        return ResearchQuery(query=query, corpus_path=corpus)
     except ValidationError as exc:
         console.print(
             Panel.fit(
@@ -40,11 +40,14 @@ def _parse_query(query: str) -> ResearchQuery:
 @app.command()
 def baseline(
     query: Annotated[str, typer.Option("--query", "-q", help="Research query")],
+    corpus: Annotated[
+        str | None, typer.Option("--corpus", "-c", help="Path to offline corpus JSON file")
+    ] = None,
 ) -> None:
     """Run a minimal single-agent baseline."""
 
     _init()
-    request = _parse_query(query)
+    request = _parse_query(query, corpus)
     state = ResearchState(request=request)
     
     import time
@@ -56,7 +59,9 @@ def baseline(
     
     try:
         search_client = SearchClient()
-        sources = search_client.search(query, max_results=request.max_sources)
+        sources = search_client.search(
+            query, max_results=request.max_sources, corpus_path=request.corpus_path
+        )
         state.sources = sources
         
         sources_text = "\n\n".join(
@@ -89,11 +94,14 @@ def baseline(
 @app.command("multi-agent")
 def multi_agent(
     query: Annotated[str, typer.Option("--query", "-q", help="Research query")],
+    corpus: Annotated[
+        str | None, typer.Option("--corpus", "-c", help="Path to offline corpus JSON file")
+    ] = None,
 ) -> None:
     """Run the multi-agent workflow skeleton."""
 
     _init()
-    state = ResearchState(request=_parse_query(query))
+    state = ResearchState(request=_parse_query(query, corpus))
     workflow = MultiAgentWorkflow()
     try:
         result = workflow.run(state)
